@@ -35,7 +35,7 @@ def fileToXmmsUri(file):
 
 class Xmms2Nautilus(nautilus.InfoProvider, nautilus.MenuProvider):
     def __init__(self):
-        self.xmms = xmmsclient.XMMSSync("xmms2-OpenboxMenu")
+        self.xmms = xmmsclient.XMMSSync("xmms2-Nautilus")
         try:
             self.xmms.connect(os.getenv("XMMS_PATH"))
         except IOError:
