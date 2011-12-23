@@ -95,7 +95,7 @@ class Xmms2Nautilus(nautilus.InfoProvider, nautilus.MenuProvider):
         topItem.set_submenu(menu)
         
         if noFilesHaveIds:
-            menuItem = nautilus.MenuItem('Xmms2Nautilus::add', 'add', 'Add selected files from medialib', 'edit-add')
+            menuItem = nautilus.MenuItem('Xmms2Nautilus::add', 'add', 'Add selected files to medialib', 'edit-add')
             menuItem.connect('activate', self.menuAdd, files)
             menu.append_item(menuItem)  
         
