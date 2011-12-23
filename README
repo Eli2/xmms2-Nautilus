@@ -1,0 +1,7 @@
+requires:
+python-nautilus
+python-xmmsclient
+
+install:
+run installEmblem.sh
+copy xmms2-Nautilus.py to ~/.nautilus/python-extensions/
