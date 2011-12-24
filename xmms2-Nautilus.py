@@ -26,6 +26,8 @@
 import os
 from urllib import quote_plus, unquote_plus
 
+import time
+
 import nautilus
 
 import xmmsclient
@@ -35,13 +37,27 @@ def fileToXmmsUri(file):
 
 class Xmms2Nautilus(nautilus.InfoProvider, nautilus.MenuProvider):
     def __init__(self):
-        self.xmms = xmmsclient.XMMSSync("xmms2-Nautilus")
-        try:
-            self.xmms.connect(os.getenv("XMMS_PATH"))
-        except IOError:
-            self.xmms = None
+        self.xmms = None
+        self.lastConnect = 0.0
+        self.daemonConnect()
+
+    def daemonConnect(self):
+        currentTime = time.time()
+        timeDiff = currentTime - self.lastConnect;
+        
+        if self.xmms == None and timeDiff > 10.0:
+            self.lastConnect = currentTime
+            self.xmms = xmmsclient.XMMSSync("xmms2-Nautilus")
+            try:
+                self.xmms.connect(os.getenv("XMMS_PATH"), self.daemonDisconnect)
+            except IOError:
+                self.xmms = None
+
+    def daemonDisconnect(self, xmms):
+        self.xmms = None
 
     def update_file_info(self, file):
+        self.daemonConnect()
         if self.xmms == None:
             return
         
@@ -55,8 +71,11 @@ class Xmms2Nautilus(nautilus.InfoProvider, nautilus.MenuProvider):
     def menuAdd(self, menu, files):
         for file in files:
             uri = fileToXmmsUri(file)
-            self.xmms.medialib_add_entry(uri)
-            file.invalidate_extension_info()
+            if file.is_directory():
+                self.xmms.medialib_import_path(uri)
+            else:
+		        self.xmms.medialib_add_entry(uri)
+		        file.invalidate_extension_info()
             
     def menuRemove(self, menu, files):
         for file in files:
@@ -69,12 +88,9 @@ class Xmms2Nautilus(nautilus.InfoProvider, nautilus.MenuProvider):
             file.invalidate_extension_info()
     
     def get_file_items(self, window, files):
+        self.daemonConnect()
         if self.xmms == None:
             return
-        
-        for file in files:
-            if file.is_directory():
-                return
         
         for file in files:
             file.xmmsId = self.xmms.medialib_get_id(fileToXmmsUri(file))
@@ -94,10 +110,10 @@ class Xmms2Nautilus(nautilus.InfoProvider, nautilus.MenuProvider):
         menu = nautilus.Menu()
         topItem.set_submenu(menu)
         
-        if noFilesHaveIds:
-            menuItem = nautilus.MenuItem('Xmms2Nautilus::add', 'add', 'Add selected files to medialib', 'edit-add')
-            menuItem.connect('activate', self.menuAdd, files)
-            menu.append_item(menuItem)  
+        #if noFilesHaveIds:
+        menuItem = nautilus.MenuItem('Xmms2Nautilus::add', 'add', 'Add selected files to medialib', 'edit-add')
+        menuItem.connect('activate', self.menuAdd, files)
+        menu.append_item(menuItem)  
         
         if allFilesHaveIds:
             menuItem = nautilus.MenuItem('Xmms2Nautilus::remove', 'remove', 'Remove selected files from medialib', 'edit-delete')
